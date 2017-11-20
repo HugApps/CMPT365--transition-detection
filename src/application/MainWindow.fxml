@@ -25,7 +25,7 @@
                         <Insets left="150.0" top="20.0" />
                      </HBox.margin>
                   </Button>
-                  <Button mnemonicParsing="false" onAction="#playImage" prefHeight="40.0" prefWidth="100.0" text="Play">
+                  <Button mnemonicParsing="false" onAction="#playVideo" prefHeight="40.0" prefWidth="100.0" text="Play">
                      <HBox.margin>
                         <Insets left="100.0" top="20.0" />
                      </HBox.margin>
@@ -41,6 +41,36 @@
       </VBox>
    </bottom>
    <center>
-      <ImageView fx:id="imageView" fitHeight="263.0" fitWidth="421.0" pickOnBounds="true" preserveRatio="true" BorderPane.alignment="CENTER" />
+      <VBox>
+         <children>
+            <ImageView fx:id="imageView" fitHeight="263.0" fitWidth="421.0" pickOnBounds="true" preserveRatio="true" BorderPane.alignment="CENTER">
+               <VBox.margin>
+                  <Insets left="90.0" top="10.0" />
+               </VBox.margin>
+            </ImageView>
+            <Slider fx:id="slider" blockIncrement="0.1" majorTickUnit="0.25" max="1.0">
+               <VBox.margin>
+                  <Insets left="90.0" right="90.0" />
+               </VBox.margin>
+            </Slider>
+         </children>
+      </VBox>
    </center>
+   <left>
+      <VBox prefHeight="200.0" prefWidth="100.0" style="-fx-background-color: grey;" BorderPane.alignment="CENTER">
+         <children>
+            <Label text="Height" />
+            <TextField fx:id="heightInput"  promptText="Height" >
+               <padding>
+                  <Insets left="10.0" />
+               </padding>
+            </TextField>
+            <Label text="Width" />
+            <TextField fx:id="widthInput" promptText="Width"  />
+            <Label text="Samples /Column" />
+            <TextField fx:id="sampleInput" promptText="Samples per Column"  />
+            <Button fx:id="submit" mnemonicParsing="false" onAction="#submitParams" text="Submit" />
+         </children>
+      </VBox>
+   </left>
 </BorderPane>
