@@ -106,12 +106,12 @@ public class Controller {
 	private String getImageFilename() {
 		// This method should return the filename of the image to be played
 		// You should insert your code here to allow user to select the file
-		FileChooser fileDialog = new FileChooser();
+		/*FileChooser fileDialog = new FileChooser();
 		fileDialog.setTitle("Select a Video File");
 		File selectedFile = fileDialog.showOpenDialog(null);
-		String fileName = selectedFile.getAbsolutePath();
+		String fileName = selectedFile.getAbsolutePath();*/
 		
-		return fileName;
+		return "resources/test.mp4";
 	}
 	
 	
@@ -177,18 +177,26 @@ public class Controller {
 	private String StiPrediction(Mat[] framesArray,int width,int height) {
 		
 		 int frameType = framesArray[0].type();
-		 Mat horizontalSTI = new Mat(height,framesArray.length,frameType);
-		 Mat verticalSTI = new Mat(height,framesArray.length,frameType);
-		 int middleIndex = Math.floorDiv(width, 2);
-		 System.out.println(middleIndex);
+		 //rows x columns
+		 Mat colSTI = new Mat(width,framesArray.length,frameType);
+		 Mat rolSTI = new Mat(height,framesArray.length,frameType);
+		 int middleRolIndex = Math.floorDiv(height, 2);
+		 int middleColIndex = Math.floorDiv(width, 2);
+		
 		 for (int i = 0 ; i <=framesArray.length -1 ;i++) {
 			 System.out.println(framesArray[i].size());
-			 Mat middle_col = framesArray[i].col(middleIndex);
-			 middle_col = middle_col.t();
-			 middle_col.copyTo(horizontalSTI.row(i));
+			 if(framesArray[i].size().height != 0 ||framesArray[i].size().width != 0) {
+			   Mat middle_col = framesArray[i].col(middleColIndex);
+			   Mat middle_row = framesArray[i].row(middleRolIndex);
+			   middle_col = middle_col.t();
+			   middle_row = middle_row.t();
+			   middle_col.copyTo(colSTI.col(i));
+			   middle_row.copyTo(rolSTI.col(i));
+			 }
 		 }
 			 
-		
+		 Image im = Utilities.mat2Image(colSTI);
+		 imageView.setImage(im);
 		 return"done";
 		
 	}
@@ -196,22 +204,32 @@ public class Controller {
 	protected void playVideo(ActionEvent event) throws LineUnavailableException, InterruptedException {
 		
 		//createFrameGrabber();
+		
 		double totalNumberFrames = capture.get(Videoio.CAP_PROP_FRAME_COUNT);
 		double frameWidth = capture.get(Videoio.CAP_PROP_FRAME_WIDTH);
 		double frameHeight = capture.get(Videoio.CAP_PROP_FRAME_HEIGHT);
-		 
+		System.out.println(frameWidth);
+		System.out.println(totalNumberFrames);
 		Mat[] frameArray = new Mat[(int)totalNumberFrames];
 		Mat frame = new Mat();
 		int index = 0;
 		Boolean hasFrame = true;
-		while(hasFrame) {
-			System.out.println(index);
-			System.out.println(frame.size());
+		while(true) {
 			hasFrame =capture.read(frame);
 			frameArray[index] = frame;
+			
+			if(hasFrame == false) {
+				System.out.println("No frame");
+				break;
+			}
+			
+			if(index >= totalNumberFrames) {
+				break;
+			}
+			System.out.println(index);
 			index ++;
 		}
-		 
+		
 		System.out.println(StiPrediction(frameArray,(int)frameWidth,(int)frameHeight));
 		 //Define the STI matrix for horizontal
 		
