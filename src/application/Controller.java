@@ -17,6 +17,7 @@ import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.SourceDataLine;
 import javax.sound.sampled.TargetDataLine;
 
+import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
@@ -74,25 +75,6 @@ public class Controller {
 	private VideoCapture capture;
 	private ScheduledExecutorService timer; 
 
-	@FXML
-	protected void submitParams(ActionEvent event) throws LineUnavailableException, InterruptedException {
-		if(isPlaying == true) {
-			return;
-		}
-		try {
-			this.width = Integer.parseInt(widthInput.getText());
-			this.height = Integer.parseInt(heightInput.getText());
-			this.numberOfSamplesPerColumn = Integer.parseInt(sampleInput.getText());
-			initFeqMap(this.width,this.height,this.numberOfSamplesPerColumn);
-			
-		}catch(Exception e) {
-			System.out.println(e);
-			new errorMessage("Invalid input","please enter a number");
-		}
-		
-		
-	}
-	
 	
 	@FXML
 	private void initialize() {
@@ -133,18 +115,12 @@ public class Controller {
 	}
 	
 	
-	protected void seekVideo() {
-		double totalFrameCount = capture.get(Videoio.CAP_PROP_FRAME_COUNT);
-		double sliderVal = slider.getValue();
-		sliderValue = sliderVal;
-		capture.set(Videoio.CAP_PROP_POS_FRAMES, totalFrameCount * sliderVal);
-	}
-	
 	protected void createFrameGrabber() throws InterruptedException, LineUnavailableException { 
-		
+		 
 		 if (capture != null && capture.isOpened()) { 
 			 // the video must be open     
 			 double framePerSecond =capture.get(Videoio.CAP_PROP_FPS);
+			 
 			 Runnable frameGrabber = new Runnable() {       
 				 @Override      
 				 public void run() { 
@@ -153,93 +129,17 @@ public class Controller {
 					 if (capture.read(frame)) { 
 						 // decode successfully
 						 
+						 //Mat middle = frame.col(middle_column);
+						 
+						 //System.out.println(frame.size());
 						 Image image = Utilities.mat2Image(frame);
 						 imageView.setImage(Utilities.mat2Image(frame));
-							if (image != null) {
-								// convert the image from RGB to grayscale
-								Mat grayImage = new Mat();
-								Imgproc.cvtColor(frame, grayImage, Imgproc.COLOR_BGR2GRAY);
-								Mat debugFrame = frame;
-								// resize the image
-								Mat resizedImage = new Mat();
-								Imgproc.resize(grayImage, resizedImage, new Size(width, height));
-								
-								// quantization
-								double[][] roundedImage = new double[resizedImage.rows()][resizedImage.cols()];
-								for (int row = 0; row < resizedImage.rows(); row++) {
-									for (int col = 0; col < resizedImage.cols(); col++) {
-										roundedImage[row][col] = (double)Math.floor(resizedImage.get(row, col)[0]/numberOfQuantizionLevels) / numberOfQuantizionLevels;
-									}
-								}
-								
-								// I used an AudioFormat object and a SourceDataLine object to perform audio output. Feel free to try other options
-						        AudioFormat audioFormat = new AudioFormat(sampleRate, sampleSizeInBits, numberOfChannels, true, true);
-						        try {
-					            SourceDataLine sourceDataLine = AudioSystem.getSourceDataLine(audioFormat);
-					            sourceDataLine.open(audioFormat, sampleRate);
-					         
-					            sourceDataLine.start();
-					            
-					            for (int col = 0; col < width; col++) {
-					            	    byte[] audioBuffer = new byte[numberOfSamplesPerColumn];
-					            	    
-					            	for (int t = 1; t <= numberOfSamplesPerColumn; t++) {
-					            		double signal = 0;
-					                	for (int row = 0; row < height; row++) {
-					                		int m = height - row - 1; // Be sure you understand why it is height rather width, and why we subtract 1 
-					                		int time = t + col * numberOfSamplesPerColumn;
-					                		double ss = Math.sin(2 * Math.PI * freq[m] * (double)time/sampleRate);
-					                		signal += roundedImage[row][col] * ss;
-					                	}
-					                	double normalizedSignal = signal / height; // signal: [-height, height];  normalizedSignal: [-1, 1]
-					                	audioBuffer[t-1] = (byte) (normalizedSignal*0x7F); // Be sure you understand what the weird number 0x7F is for
-					            	}
-					            	byte [] tmp =  new byte[fullAudioBuffer.length +audioBuffer.length];
-					            	System.arraycopy(fullAudioBuffer,0,tmp,0,fullAudioBuffer.length);
-					            	System.arraycopy(audioBuffer,0,tmp,fullAudioBuffer.length,audioBuffer.length);
-					            	fullAudioBuffer = tmp.clone();
-					            	
-					            	sourceDataLine.write(audioBuffer, 0, numberOfSamplesPerColumn);
-					            	
-					            	
-					            }
-					            sourceDataLine.drain();
-					            sourceDataLine.close();
-						        } catch(Exception e ) {
-						        	System.out.println(e.toString());
-						        	new errorMessage("Exception",e.getMessage());
-						        }
-							} else {
-								new errorMessage("Video done playing","see resource/output.wave for putputfile");
-								isPlaying = false;
-								
-								return;
-							}
-						 double currentFrameNumber = capture.get(Videoio.CAP_PROP_POS_FRAMES);
-						 double totalFrameCount = capture.get(Videoio.CAP_PROP_FRAME_COUNT);
-						 
-						 if(slider.getValue() == sliderValue) {
-							 slider.setValue(currentFrameNumber / totalFrameCount * (slider.getMax() - slider.getMin()));
-							 sliderValue = slider.getValue();
-						 } else {
-							 seekVideo();
-						 }
-						 try {
-						 Clip clip = AudioSystem.getClip();
-						 clip.open(AudioSystem.getAudioInputStream(new File("resources/click.wav")));
-						 clip.start();
-						 
-						 }catch(Exception exc) {
-							 System.out.println(exc);
-							 new errorMessage("Exception",exc.getMessage());
-						 }
-						 
                     } else { 
                     	// reach the end of the video
                          // create a runnable to fetch new frames periodically 
                     	 
                          capture.set(Videoio.CAP_PROP_POS_FRAMES, 0); 
-                         writeToFile(fullAudioBuffer);
+ 
                          return;
 					 }
 					 
@@ -257,18 +157,7 @@ public class Controller {
 	}
 	
 	
-	private void writeToFile(byte[] buffer) {
-	    InputStream audioStream = new ByteArrayInputStream(buffer);
-	    AudioFormat audio = new AudioFormat(sampleRate, sampleSizeInBits, numberOfChannels, true, true);
-	    AudioInputStream stream = new AudioInputStream(audioStream,audio,buffer.length);
-        try {
-			AudioSystem.write(stream,Type.WAVE,new File("resources/output.wav"));
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			new errorMessage("Write to file failed",e.getMessage());
-		}
-	}
+	
 	@FXML
 	protected void openImage(ActionEvent event) throws InterruptedException {
 			capture = new VideoCapture(getImageFilename());
@@ -284,13 +173,50 @@ public class Controller {
 			}
 	}
 	
+	
+	private String StiPrediction(Mat[] framesArray,int width,int height) {
+		
+		 int frameType = framesArray[0].type();
+		 Mat horizontalSTI = new Mat(height,framesArray.length,frameType);
+		 Mat verticalSTI = new Mat(height,framesArray.length,frameType);
+		 int middleIndex = Math.floorDiv(width, 2);
+		 System.out.println(middleIndex);
+		 for (int i = 0 ; i <=framesArray.length -1 ;i++) {
+			 System.out.println(framesArray[i].size());
+			 Mat middle_col = framesArray[i].col(middleIndex);
+			 middle_col = middle_col.t();
+			 middle_col.copyTo(horizontalSTI.row(i));
+		 }
+			 
+		
+		 return"done";
+		
+	}
 	@FXML
 	protected void playVideo(ActionEvent event) throws LineUnavailableException, InterruptedException {
-		if(freq== null || freq.length <=0) {
-			new errorMessage("Missing Params","please set width ,height and samples per column before playing");
-			return;
+		
+		//createFrameGrabber();
+		double totalNumberFrames = capture.get(Videoio.CAP_PROP_FRAME_COUNT);
+		double frameWidth = capture.get(Videoio.CAP_PROP_FRAME_WIDTH);
+		double frameHeight = capture.get(Videoio.CAP_PROP_FRAME_HEIGHT);
+		 
+		Mat[] frameArray = new Mat[(int)totalNumberFrames];
+		Mat frame = new Mat();
+		int index = 0;
+		Boolean hasFrame = true;
+		while(hasFrame) {
+			System.out.println(index);
+			System.out.println(frame.size());
+			hasFrame =capture.read(frame);
+			frameArray[index] = frame;
+			index ++;
 		}
-		createFrameGrabber();
+		 
+		System.out.println(StiPrediction(frameArray,(int)frameWidth,(int)frameHeight));
+		 //Define the STI matrix for horizontal
+		
 	}
 
+	
+	
 }
