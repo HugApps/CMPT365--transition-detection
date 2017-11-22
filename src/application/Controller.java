@@ -8,6 +8,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import javax.lang.model.type.ArrayType;
 import javax.sound.sampled.AudioFileFormat.Type;
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioInputStream;
@@ -58,7 +59,7 @@ public class Controller {
 	@FXML
 	private Button submit;
 	private Mat image;
-	
+
 	private int width;
 	private int height;
 	private int sampleRate; // sampling frequency
@@ -71,10 +72,13 @@ public class Controller {
 	private Alert errorDialog ;
 	private boolean isPlaying;
 	private byte[] fullAudioBuffer;
-	
+	double framesPlayed = 1;
 	private VideoCapture capture;
 	private ScheduledExecutorService timer; 
 
+	
+	Mat colSTI = new Mat();
+	Mat rolSTI = new Mat();
 	
 	@FXML
 	private void initialize() {
@@ -116,30 +120,53 @@ public class Controller {
 	
 	
 	protected void createFrameGrabber() throws InterruptedException, LineUnavailableException { 
-		 
+		 double framePerSecond =capture.get(Videoio.CAP_PROP_FPS);
+		 double totalNumberFrames = capture.get(Videoio.CAP_PROP_FRAME_COUNT);
+		 double frameWidth = capture.get(Videoio.CAP_PROP_FRAME_WIDTH);
+		 double frameHeight = capture.get(Videoio.CAP_PROP_FRAME_HEIGHT);
+		 colSTI = Mat.zeros((int)frameWidth,(int)totalNumberFrames,16);
+		 rolSTI = Mat.zeros((int)frameHeight,(int)totalNumberFrames,16);
 		 if (capture != null && capture.isOpened()) { 
 			 // the video must be open     
-			 double framePerSecond =capture.get(Videoio.CAP_PROP_FPS);
-			 
+			
 			 Runnable frameGrabber = new Runnable() {       
 				 @Override      
 				 public void run() { 
 					 isPlaying = true;
 					 Mat frame = new Mat();
+					 int index = 0;
+					 if(framesPlayed == totalNumberFrames) {
+						if(rolSTI.empty()) {
+							System.out.println("its empty");
+							return;
+						}else {
+							Image image = Utilities.mat2Image(rolSTI);
+							imageView.setImage(image);
+							return;
+						}
+						
+					 }
 					 if (capture.read(frame)) { 
 						 // decode successfully
-						 
-						 //Mat middle = frame.col(middle_column);
-						 
-						 //System.out.println(frame.size());
-						 Image image = Utilities.mat2Image(frame);
-						 imageView.setImage(Utilities.mat2Image(frame));
+						System.out.println(frame.type());
+						int middleRolIndex = Math.floorDiv(frame.height(), 2);
+						int middleColIndex = Math.floorDiv(frame.width(), 2);
+						Mat middle_col = frame.col(middleColIndex);
+						Mat middle_row = frame.row(middleRolIndex);
+						middle_col.copyTo(colSTI.col((int)framesPlayed-1));
+						middle_row.copyTo(rolSTI.col((int)framesPlayed-1));
+						
+						
+						Image image = Utilities.mat2Image(middle_col);
+						imageView.setImage(image);
+						framesPlayed++;
+						
                     } else { 
                     	// reach the end of the video
-                         // create a runnable to fetch new frames periodically 
-                    	 
-                         capture.set(Videoio.CAP_PROP_POS_FRAMES, 0); 
- 
+                         // create a runnable to fetch new frames periodically
+                    	 System.out.println("STOP video");
+                    	 isPlaying = false;
+                         //capture.set(Videoio.CAP_PROP_POS_FRAMES, 0); 
                          return;
 					 }
 					 
@@ -151,8 +178,8 @@ public class Controller {
 			 }  
 			    // run the frame grabber     
 			  timer = Executors.newSingleThreadScheduledExecutor();  
-			  timer.scheduleAtFixedRate(frameGrabber, 0, Math.round(1000/framePerSecond), TimeUnit.MILLISECONDS); 
-			  
+			  timer.scheduleAtFixedRate(frameGrabber, 0, Math.round(1000/framePerSecond), TimeUnit.MILLISECONDS);
+			    
 		 }
 	}
 	
@@ -203,9 +230,9 @@ public class Controller {
 	@FXML
 	protected void playVideo(ActionEvent event) throws LineUnavailableException, InterruptedException {
 		
-		//createFrameGrabber();
+		createFrameGrabber();
 		
-		double totalNumberFrames = capture.get(Videoio.CAP_PROP_FRAME_COUNT);
+		/*double totalNumberFrames = capture.get(Videoio.CAP_PROP_FRAME_COUNT);
 		double frameWidth = capture.get(Videoio.CAP_PROP_FRAME_WIDTH);
 		double frameHeight = capture.get(Videoio.CAP_PROP_FRAME_HEIGHT);
 		System.out.println(frameWidth);
@@ -231,7 +258,7 @@ public class Controller {
 		}
 		
 		System.out.println(StiPrediction(frameArray,(int)frameWidth,(int)frameHeight));
-		 //Define the STI matrix for horizontal
+		 //Define the STI matrix for horizontal*/
 		
 	}
 
