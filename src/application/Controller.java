@@ -78,7 +78,7 @@ public class Controller {
 
 	
 	Mat colSTI = new Mat();
-	Mat rolSTI = new Mat();
+	Mat rowSTI = new Mat();
 	
 	@FXML
 	private void initialize() {
@@ -124,8 +124,9 @@ public class Controller {
 		 double totalNumberFrames = capture.get(Videoio.CAP_PROP_FRAME_COUNT);
 		 double frameWidth = capture.get(Videoio.CAP_PROP_FRAME_WIDTH);
 		 double frameHeight = capture.get(Videoio.CAP_PROP_FRAME_HEIGHT);
-		 colSTI = Mat.zeros((int)frameWidth,(int)totalNumberFrames,16);
-		 rolSTI = Mat.zeros((int)frameHeight,(int)totalNumberFrames,16);
+		 colSTI = new Mat(new Size(frameHeight,0),16);
+		 rowSTI = new Mat(new Size(frameWidth,0),16);
+		 
 		 if (capture != null && capture.isOpened()) { 
 			 // the video must be open     
 			
@@ -136,28 +137,30 @@ public class Controller {
 					 Mat frame = new Mat();
 					 int index = 0;
 					 if(framesPlayed == totalNumberFrames) {
-						if(rolSTI.empty()) {
+						if(rowSTI.empty()) {
 							System.out.println("its empty");
 							return;
 						}else {
-							Image image = Utilities.mat2Image(rolSTI);
-							imageView.setImage(image);
+							//Image image = Utilities.mat2Image(rolSTI);
+							//imageView.setImage(image);
 							return;
 						}
 						
 					 }
 					 if (capture.read(frame)) { 
 						 // decode successfully
+						int frameIndex = (int)framesPlayed;
 						System.out.println(frame.type());
 						int middleRolIndex = Math.floorDiv(frame.height(), 2);
 						int middleColIndex = Math.floorDiv(frame.width(), 2);
-						Mat middle_col = frame.col(middleColIndex);
-						Mat middle_row = frame.row(middleRolIndex);
-						middle_col.copyTo(colSTI.col((int)framesPlayed-1));
-						middle_row.copyTo(rolSTI.col((int)framesPlayed-1));
+						  Mat middle_col = frame.col(middleColIndex);
+						  Mat middle_row = frame.row(middleRolIndex);
 						
 						
-						Image image = Utilities.mat2Image(middle_col);
+					
+						//colSTI.push_back(middle_col.t());
+						rowSTI.push_back(middle_row);
+						Image image = Utilities.mat2Image(rowSTI);
 						imageView.setImage(image);
 						framesPlayed++;
 						
