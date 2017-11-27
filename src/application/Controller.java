@@ -4,6 +4,7 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -79,7 +80,9 @@ public class Controller {
 	
 	Mat colSTI = new Mat();
 	Mat rowSTI = new Mat();
+	int[][] histogram;
 	
+	ArrayList<int[][]> histogramTable = new ArrayList<int[][]>();
 	@FXML
 	private void initialize() {
 		// Optional: You should modify the logic so that the user can change these values
@@ -124,9 +127,13 @@ public class Controller {
 		 double totalNumberFrames = capture.get(Videoio.CAP_PROP_FRAME_COUNT);
 		 double frameWidth = capture.get(Videoio.CAP_PROP_FRAME_WIDTH);
 		 double frameHeight = capture.get(Videoio.CAP_PROP_FRAME_HEIGHT);
+		 
 		 colSTI = new Mat(new Size(frameHeight,0),16);
 		 rowSTI = new Mat(new Size(frameWidth,0),16);
 		 
+		 int ColBins = (int) (1 + Math.log(frameHeight)/Math.log(2));
+		 histogram = new int[ColBins][ColBins];
+		// System.out.println(ColBins);
 		 if (capture != null && capture.isOpened()) { 
 			 // the video must be open     
 			
@@ -135,31 +142,13 @@ public class Controller {
 				 public void run() { 
 					 isPlaying = true;
 					 Mat frame = new Mat();
-					 int index = 0;
-					 if(framesPlayed == totalNumberFrames) {
-						if(rowSTI.empty()) {
-							System.out.println("its empty");
-							return;
-						}else {
-							//Image image = Utilities.mat2Image(rolSTI);
-							//imageView.setImage(image);
-							return;
-						}
-						
-					 }
+					 
 					 if (capture.read(frame)) { 
 						 // decode successfully
 						int frameIndex = (int)framesPlayed;
-						System.out.println(frame.type());
-						int middleRolIndex = Math.floorDiv(frame.height(), 2);
-						int middleColIndex = Math.floorDiv(frame.width(), 2);
-						  Mat middle_col = frame.col(middleColIndex);
-						  Mat middle_row = frame.row(middleRolIndex);
-						
-						
-					
-						//colSTI.push_back(middle_col.t());
-						rowSTI.push_back(middle_row);
+						buildSTI(frame,frameIndex);
+						// compare histogram of chromaticty between different frames of middle col
+						//buildHistogram(frame,histogram);
 						Image image = Utilities.mat2Image(rowSTI);
 						imageView.setImage(image);
 						framesPlayed++;
@@ -167,7 +156,6 @@ public class Controller {
                     } else { 
                     	// reach the end of the video
                          // create a runnable to fetch new frames periodically
-                    	 System.out.println("STOP video");
                     	 isPlaying = false;
                          //capture.set(Videoio.CAP_PROP_POS_FRAMES, 0); 
                          return;
@@ -186,7 +174,59 @@ public class Controller {
 		 }
 	}
 	
+	public void buildHistogram(Mat frame,int[][] histogram) {
+		int middleColIndex = Math.floorDiv(frame.width(), 2);
+		Mat middle_col = frame.col(middleColIndex);
+		for (int row = 0 ; row <= middle_col.rows()-1;row++) {
+			int[] currentPixel = getRGB(middle_col,0,row);//RGB
+			int RIndex = currentPixel[0]%histogram[0].length;
+			int GIndex = currentPixel[1]%histogram[1].length;
+			int[] currentChromaticty = chromtacity(currentPixel);
+			//histogram[RIndex][GIndex]=currentChromaticty;
+			
+		}
+		
+	}
 	
+	//Builds both the col and row STI matrices
+	public void buildSTI(Mat frame,int index) {
+		int middleRolIndex = Math.floorDiv(frame.height(), 2);
+		int middleColIndex = Math.floorDiv(frame.width(), 2);
+		Mat middle_col = frame.col(middleColIndex);
+		Mat middle_row = frame.row(middleRolIndex);
+		
+		colSTI.push_back(middle_col.t());
+		rowSTI.push_back(middle_row);
+	}
+	
+	
+	public int[] getRGB (Mat sti, int col,int row) {
+		int[] RGB= new int[3]; // RGB order
+		double[] BGR = sti.get(col,row);
+		
+		RGB[0]= (int)Math.floor(BGR[2]);
+		RGB[1]=(int)Math.floor(BGR[1]);
+		RGB[2]=(int)Math.floor(BGR[0]);
+		return RGB;
+	}
+	
+	// returns the chromaticty of {r,g} into a array [0] = r , [1] =g
+	public int[] chromtacity(int[] pixel ) {
+		int[] output = new int[2];
+		int sum = pixel[0]+pixel[1]+pixel[2];
+		if ( sum == 0) { 
+			//case where its black, we just return 0 for both values ?
+			output[0]=0;
+			output[1]=0;
+			return output;
+		}
+		int r =  pixel[0]/sum;
+		int g = pixel[1]/sum;
+		
+		output[0] = r;
+		output[1] = g;
+		return output;
+	}
 	
 	@FXML
 	protected void openImage(ActionEvent event) throws InterruptedException {
