@@ -1,28 +1,16 @@
 package application;
 
-import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
+
 import java.util.ArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import javax.lang.model.type.ArrayType;
-import javax.sound.sampled.AudioFileFormat.Type;
-import javax.sound.sampled.AudioFormat;
-import javax.sound.sampled.AudioInputStream;
-import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.Clip;
 import javax.sound.sampled.LineUnavailableException;
-import javax.sound.sampled.SourceDataLine;
-import javax.sound.sampled.TargetDataLine;
 
-import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.Size;
-import org.opencv.imgproc.Imgproc;
 import org.opencv.videoio.VideoCapture;
 import org.opencv.videoio.Videoio;
 
@@ -59,43 +47,14 @@ public class Controller {
 	private TextField heightInput,widthInput,sampleInput;
 	@FXML
 	private Button submit;
-	private Mat image;
-
-	private int width;
-	private int height;
-	private int sampleRate; // sampling frequency
-	private int sampleSizeInBits;
-	private int numberOfChannels;
-	private double[] freq; // frequencies for each particular row
-	private int numberOfQuantizionLevels;
-	private int numberOfSamplesPerColumn;
-	private double sliderValue; //Controller's knowledge of the value of the slider
-	private Alert errorDialog ;
-	private boolean isPlaying;
-	private byte[] fullAudioBuffer;
 	double framesPlayed = 1;
 	private VideoCapture capture;
 	private ScheduledExecutorService timer; 
 
 	
 	Mat colSTI = new Mat();
-	Mat rowSTI = new Mat();
-	
-	
-	@FXML
-	private void initialize() {
-		// Optional: You should modify the logic so that the user can change these values
-		// You may also do some experiments with different values
-		width = 64;
-		height = 64;
-		sampleRate = 8000;
-		sampleSizeInBits = 8;
-		numberOfChannels = 1;
-		numberOfQuantizionLevels = 16;
-		sliderValue = 0;
-		isPlaying = false;
-		numberOfSamplesPerColumn = 500;
-	}
+	Mat rowSTI = new Mat();	
+	Mat diagSTI = new Mat();
 	
 	private String getImageFilename() {
 		// This method should return the filename of the image to be played
@@ -111,12 +70,12 @@ public class Controller {
 	
 	protected void createFrameGrabber() throws InterruptedException, LineUnavailableException { 
 		 double framePerSecond =capture.get(Videoio.CAP_PROP_FPS);
-		 double totalNumberFrames = capture.get(Videoio.CAP_PROP_FRAME_COUNT);
 		 double frameWidth = capture.get(Videoio.CAP_PROP_FRAME_WIDTH);
 		 double frameHeight = capture.get(Videoio.CAP_PROP_FRAME_HEIGHT);
 		 
 		 colSTI = new Mat(new Size(frameHeight,0),16);
 		 rowSTI = new Mat(new Size(frameWidth,0),16);
+		 diagSTI = new Mat(new Size(min(frameWidth, frameHeight), 0),16);
 		 
 		 int bins = (int) (1 + Math.log(frameHeight)/Math.log(2));;
 		 if (capture != null && capture.isOpened()) { 
@@ -125,25 +84,22 @@ public class Controller {
 			 Runnable frameGrabber = new Runnable() {       
 				 @Override      
 				 public void run() { 
-					 isPlaying = true;
 					 Mat frame = new Mat();
 					 
 					 if (capture.read(frame)) { 
 						 // decode successfully
 						int frameIndex = (int)framesPlayed;
 						buildSTI(frame,frameIndex);
-					
-						// compare histogram of chromaticty between different frames of middle col
 						Image image = Utilities.mat2Image(colSTI);
 						imageView.setImage(image);
 						framesPlayed++;
 						
                     } else { 
-                    	isPlaying = false;
                     	timer.shutdown();
                     	
                     	ArrayList<double[][]> colHistogramTable = new ArrayList<double[][]>();
                     	ArrayList<double[][]> rowHistogramTable = new ArrayList<double[][]>();
+                    	ArrayList<double[][]> diagHistogramTable = new ArrayList<double[][]>();
                     	//TODO histogram diagonal tables
                     	
                     	//transpose to match project description logic
@@ -159,8 +115,13 @@ public class Controller {
                     		buildHistogram(rowSTI.col(i), rowHistogramTable);
                     	}
                     	
+                    	for(int i = 0; i < diagSTI.width(); i++) {
+                    		buildHistogram(diagSTI.col(i), diagHistogramTable);
+                    	}
+                    	
                     	//printHistograms(rowHistogramTable);
                     	//printHistograms(colHistogramTable);
+                    	printHistograms(diagHistogramTable);
                     	
                     	//analyze
                     	detectWipe(colHistogramTable, "Horizontal");
@@ -181,7 +142,7 @@ public class Controller {
 							}
 						}
 						// Threshold value
-						if(intersection < 0.7)  {
+						if(intersection < 0.3)  {
 							detected = true;
 							System.out.println(wipeDirection + " wipe detected between frames " + (i - 1) + " and " + i);
 						}
@@ -239,7 +200,7 @@ public class Controller {
 			 }  
 			    // run the frame grabber     
 			  timer = Executors.newSingleThreadScheduledExecutor();  
-			  timer.scheduleAtFixedRate(frameGrabber, 0, Math.round(1000/framePerSecond), TimeUnit.MILLISECONDS);
+			  timer.scheduleAtFixedRate(frameGrabber, 0, Math.round(10/framePerSecond), TimeUnit.MILLISECONDS);
 			    
 		 }
 	}
@@ -255,9 +216,11 @@ public class Controller {
 		int middleColIndex = Math.floorDiv(frame.width(), 2);
 		Mat middle_col = frame.col(middleColIndex);
 		Mat middle_row = frame.row(middleRolIndex);
+		Mat diag = frame.diag(0);
 		
 		colSTI.push_back(middle_col.t());
 		rowSTI.push_back(middle_row);
+		diagSTI.push_back(diag);
 	}
 	
 	
@@ -296,7 +259,6 @@ public class Controller {
 				
 				 Mat frame = new Mat();
 				 if(capture.read(frame)) {
-					 Image im = Utilities.mat2Image(frame);
 					 imageView.setImage(Utilities.mat2Image(frame));
 				 }
 				// we don't want to play the video as soon as it opens, for now we just grab the first frame of the video 			
