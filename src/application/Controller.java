@@ -100,12 +100,12 @@ public class Controller {
 	private String getImageFilename() {
 		// This method should return the filename of the image to be played
 		// You should insert your code here to allow user to select the file
-		/*FileChooser fileDialog = new FileChooser();
+		FileChooser fileDialog = new FileChooser();
 		fileDialog.setTitle("Select a Video File");
 		File selectedFile = fileDialog.showOpenDialog(null);
-		String fileName = selectedFile.getAbsolutePath();*/
+		String fileName = selectedFile.getAbsolutePath();
 		
-		return "resources/test.mp4";
+		return fileName;
 	}
 	
 	
