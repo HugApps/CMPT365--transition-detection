@@ -54,7 +54,7 @@ public class Controller {
 	
 	Mat colSTI = new Mat();
 	Mat rowSTI = new Mat();	
-	Mat diagSTI = new Mat();
+	//Mat diagSTI = new Mat();
 	
 	private String getImageFilename() {
 		// This method should return the filename of the image to be played
@@ -75,7 +75,7 @@ public class Controller {
 		 
 		 colSTI = new Mat(new Size(frameHeight,0),16);
 		 rowSTI = new Mat(new Size(frameWidth,0),16);
-		 diagSTI = new Mat(new Size(min(frameWidth, frameHeight), 0),16);
+		 //diagSTI = new Mat(new Size(min(frameWidth, frameHeight), 0),16);
 		 
 		 int bins = (int) (1 + Math.log(frameHeight)/Math.log(2));;
 		 if (capture != null && capture.isOpened()) { 
@@ -99,7 +99,7 @@ public class Controller {
                     	
                     	ArrayList<double[][]> colHistogramTable = new ArrayList<double[][]>();
                     	ArrayList<double[][]> rowHistogramTable = new ArrayList<double[][]>();
-                    	ArrayList<double[][]> diagHistogramTable = new ArrayList<double[][]>();
+                    	//ArrayList<double[][]> diagHistogramTable = new ArrayList<double[][]>();
                     	//TODO histogram diagonal tables
                     	
                     	//transpose to match project description logic
@@ -115,13 +115,13 @@ public class Controller {
                     		buildHistogram(rowSTI.col(i), rowHistogramTable);
                     	}
                     	
-                    	for(int i = 0; i < diagSTI.width(); i++) {
-                    		buildHistogram(diagSTI.col(i), diagHistogramTable);
-                    	}
+//                    	for(int i = 0; i < diagSTI.width(); i++) {
+//                    		buildHistogram(diagSTI.col(i), diagHistogramTable);
+//                    	}
                     	
                     	//printHistograms(rowHistogramTable);
                     	//printHistograms(colHistogramTable);
-                    	printHistograms(diagHistogramTable);
+                    	//printHistograms(diagHistogramTable);
                     	
                     	//analyze
                     	detectWipe(colHistogramTable, "Horizontal");
@@ -216,11 +216,12 @@ public class Controller {
 		int middleColIndex = Math.floorDiv(frame.width(), 2);
 		Mat middle_col = frame.col(middleColIndex);
 		Mat middle_row = frame.row(middleRolIndex);
-		Mat diag = frame.diag(0);
+		//Mat diag = frame.diag(0);
+		
 		
 		colSTI.push_back(middle_col.t());
 		rowSTI.push_back(middle_row);
-		diagSTI.push_back(diag);
+		//diagSTI.push_back(diag);
 	}
 	
 	
