@@ -80,9 +80,8 @@ public class Controller {
 	
 	Mat colSTI = new Mat();
 	Mat rowSTI = new Mat();
-	int[][] histogram;
 	
-	ArrayList<int[][]> histogramTable = new ArrayList<int[][]>();
+	
 	@FXML
 	private void initialize() {
 		// Optional: You should modify the logic so that the user can change these values
@@ -98,18 +97,6 @@ public class Controller {
 		numberOfSamplesPerColumn = 500;
 	}
 	
-	private void initFeqMap(int width, int height , int samplesPerColumn) {
-		fullAudioBuffer = new byte[samplesPerColumn];
-		freq = new double[height]; // Be sure you understand why it is height rather than width
-		freq[height/2-1] = 440.0; // 440KHz - Sound of A (La)
-		for (int m = height/2; m < height; m++) {
-			freq[m] = freq[m-1] * Math.pow(2, 1.0/12.0); 
-		}
-		for (int m = height/2-2; m >=0; m--) {
-			freq[m] = freq[m+1] * Math.pow(2, -1.0/12.0); 
-		}
-		
-	}
 	private String getImageFilename() {
 		// This method should return the filename of the image to be played
 		// You should insert your code here to allow user to select the file
@@ -131,9 +118,7 @@ public class Controller {
 		 colSTI = new Mat(new Size(frameHeight,0),16);
 		 rowSTI = new Mat(new Size(frameWidth,0),16);
 		 
-		 int ColBins = (int) (1 + Math.log(frameHeight)/Math.log(2));
-		 histogram = new int[ColBins][ColBins];
-		// System.out.println(ColBins);
+		 int bins = (int) (1 + Math.log(frameHeight)/Math.log(2));;
 		 if (capture != null && capture.isOpened()) { 
 			 // the video must be open     
 			
@@ -147,22 +132,107 @@ public class Controller {
 						 // decode successfully
 						int frameIndex = (int)framesPlayed;
 						buildSTI(frame,frameIndex);
+					
 						// compare histogram of chromaticty between different frames of middle col
-						//buildHistogram(frame,histogram);
-						Image image = Utilities.mat2Image(rowSTI);
+						Image image = Utilities.mat2Image(colSTI);
 						imageView.setImage(image);
 						framesPlayed++;
 						
                     } else { 
-                    	// reach the end of the video
-                         // create a runnable to fetch new frames periodically
-                    	 isPlaying = false;
-                         //capture.set(Videoio.CAP_PROP_POS_FRAMES, 0); 
-                         return;
+                    	isPlaying = false;
+                    	timer.shutdown();
+                    	
+                    	ArrayList<double[][]> colHistogramTable = new ArrayList<double[][]>();
+                    	ArrayList<double[][]> rowHistogramTable = new ArrayList<double[][]>();
+                    	//TODO histogram diagonal tables
+                    	
+                    	//transpose to match project description logic
+                    	colSTI = colSTI.t();
+                    	rowSTI = rowSTI.t();
+                    	
+                    	//build histograms               	
+                    	for(int i = 0; i < colSTI.width(); i++) {
+							buildHistogram(colSTI.col(i), colHistogramTable);
+						}
+                    	
+                    	for(int i = 0; i < rowSTI.width(); i++) {
+                    		buildHistogram(rowSTI.col(i), rowHistogramTable);
+                    	}
+                    	
+                    	//printHistograms(rowHistogramTable);
+                    	//printHistograms(colHistogramTable);
+                    	
+                    	//analyze
+                    	detectWipe(colHistogramTable, "Horizontal");
+                    	detectWipe(rowHistogramTable, "Vertical");
+                    	
+                        return;
 					 }
 					 
 				 }
-			 };
+
+				private void detectWipe(ArrayList<double[][]> table, String wipeDirection) {
+					boolean detected = false;
+					for(int i = 1; i < table.size(); i++) {
+						double intersection = 0;
+						for(int j = 0; j < bins; j++) {
+							for(int k = 0; k < bins; k++) {
+								intersection += min(table.get(i)[j][k], table.get(i-1)[j][k]);
+							}
+						}
+						// Threshold value
+						if(intersection < 0.7)  {
+							detected = true;
+							System.out.println(wipeDirection + " wipe detected between frames " + (i - 1) + " and " + i);
+						}
+					}
+					
+					if(!detected) {
+						System.out.println("No " + wipeDirection + " wipe detected");
+					}
+					
+				}
+
+				private void printHistograms(ArrayList<double[][]> table) {
+					System.out.println();
+                	System.out.println(table.size());
+                	for(int i = 0; i < table.size(); i++) {
+                		System.out.println("Table" + i);
+                		for(int j = 0; j < bins; j++) {
+                			for(int k = 0; k < bins; k++) {
+                				System.out.print(table.get(i)[j][k] + " ");
+                			}
+                			System.out.println();
+                		}
+                	}
+				}
+				
+				private void buildHistogram(Mat column, ArrayList<double[][]> table) {
+	
+					int[][] histogram = new int[bins][bins];
+					for(int i = 0; i < column.height(); i++) {
+						int[] rgb = getRGB(column.get(i, 0));
+						double[] chromaticity = chromaticity(rgb);
+						int red = (int)Math.ceil(chromaticity[0] * bins) - 1;
+						int green = (int)Math.ceil(chromaticity[1] * bins) - 1;
+						if(red == -1) red = 0;
+						if(green == -1) green = 0;
+						
+						histogram[red][green]++;
+					}
+					
+					//Normalize
+					double[][] normalizedHistogram = new double[bins][bins];
+					for(int i = 0; i < bins; i++) {
+						for(int j = 0; j < bins; j++) {
+							normalizedHistogram[i][j] = (double)histogram[i][j] / column.height();
+						}
+					}
+					table.add(normalizedHistogram);
+				}
+				
+			 }; //end of runnable
+			 
 			 if (timer != null && !timer.isShutdown()) {
 			    timer.shutdown();
 			    timer.awaitTermination(Math.round(1000/framePerSecond), TimeUnit.MILLISECONDS);
@@ -174,18 +244,9 @@ public class Controller {
 		 }
 	}
 	
-	public void buildHistogram(Mat frame,int[][] histogram) {
-		int middleColIndex = Math.floorDiv(frame.width(), 2);
-		Mat middle_col = frame.col(middleColIndex);
-		for (int row = 0 ; row <= middle_col.rows()-1;row++) {
-			int[] currentPixel = getRGB(middle_col,0,row);//RGB
-			int RIndex = currentPixel[0]%histogram[0].length;
-			int GIndex = currentPixel[1]%histogram[1].length;
-			int[] currentChromaticty = chromtacity(currentPixel);
-			//histogram[RIndex][GIndex]=currentChromaticty;
-			
-		}
-		
+	public double min(double val1, double val2) {
+		if(val1 < val2) return val1;
+		return val2;
 	}
 	
 	//Builds both the col and row STI matrices
@@ -200,29 +261,28 @@ public class Controller {
 	}
 	
 	
-	public int[] getRGB (Mat sti, int col,int row) {
+	public int[] getRGB (double[] pixel) {	
 		int[] RGB= new int[3]; // RGB order
-		double[] BGR = sti.get(col,row);
 		
-		RGB[0]= (int)Math.floor(BGR[2]);
-		RGB[1]=(int)Math.floor(BGR[1]);
-		RGB[2]=(int)Math.floor(BGR[0]);
+		RGB[0]= (int)Math.floor(pixel[2]);
+		RGB[1]=(int)Math.floor(pixel[1]);
+		RGB[2]=(int)Math.floor(pixel[0]);
 		return RGB;
 	}
 	
 	// returns the chromaticty of {r,g} into a array [0] = r , [1] =g
-	public int[] chromtacity(int[] pixel ) {
-		int[] output = new int[2];
-		int sum = pixel[0]+pixel[1]+pixel[2];
+	public double[] chromaticity(int[] pixel ) {
+		double[] output = new double[2];
+		double sum = pixel[0]+pixel[1]+pixel[2];
+		
 		if ( sum == 0) { 
-			//case where its black, we just return 0 for both values ?
+			//case where its black, we just return 0 for both values
 			output[0]=0;
 			output[1]=0;
 			return output;
 		}
-		int r =  pixel[0]/sum;
-		int g = pixel[1]/sum;
-		
+		double r =  pixel[0]/sum;
+		double g = pixel[1]/sum;
 		output[0] = r;
 		output[1] = g;
 		return output;
@@ -244,65 +304,9 @@ public class Controller {
 	}
 	
 	
-	private String StiPrediction(Mat[] framesArray,int width,int height) {
-		
-		 int frameType = framesArray[0].type();
-		 //rows x columns
-		 Mat colSTI = new Mat(width,framesArray.length,frameType);
-		 Mat rolSTI = new Mat(height,framesArray.length,frameType);
-		 int middleRolIndex = Math.floorDiv(height, 2);
-		 int middleColIndex = Math.floorDiv(width, 2);
-		
-		 for (int i = 0 ; i <=framesArray.length -1 ;i++) {
-			 System.out.println(framesArray[i].size());
-			 if(framesArray[i].size().height != 0 ||framesArray[i].size().width != 0) {
-			   Mat middle_col = framesArray[i].col(middleColIndex);
-			   Mat middle_row = framesArray[i].row(middleRolIndex);
-			   middle_col = middle_col.t();
-			   middle_row = middle_row.t();
-			   middle_col.copyTo(colSTI.col(i));
-			   middle_row.copyTo(rolSTI.col(i));
-			 }
-		 }
-			 
-		 Image im = Utilities.mat2Image(colSTI);
-		 imageView.setImage(im);
-		 return"done";
-		
-	}
 	@FXML
 	protected void playVideo(ActionEvent event) throws LineUnavailableException, InterruptedException {
-		
-		createFrameGrabber();
-		
-		/*double totalNumberFrames = capture.get(Videoio.CAP_PROP_FRAME_COUNT);
-		double frameWidth = capture.get(Videoio.CAP_PROP_FRAME_WIDTH);
-		double frameHeight = capture.get(Videoio.CAP_PROP_FRAME_HEIGHT);
-		System.out.println(frameWidth);
-		System.out.println(totalNumberFrames);
-		Mat[] frameArray = new Mat[(int)totalNumberFrames];
-		Mat frame = new Mat();
-		int index = 0;
-		Boolean hasFrame = true;
-		while(true) {
-			hasFrame =capture.read(frame);
-			frameArray[index] = frame;
-			
-			if(hasFrame == false) {
-				System.out.println("No frame");
-				break;
-			}
-			
-			if(index >= totalNumberFrames) {
-				break;
-			}
-			System.out.println(index);
-			index ++;
-		}
-		
-		System.out.println(StiPrediction(frameArray,(int)frameWidth,(int)frameHeight));
-		 //Define the STI matrix for horizontal*/
-		
+		createFrameGrabber();	
 	}
 
 	
