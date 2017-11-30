@@ -14,25 +14,25 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Text?>
 
-<BorderPane maxHeight="-Infinity" maxWidth="600.0" minHeight="-Infinity" minWidth="400.0" prefHeight="400.0" prefWidth="1000.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="application.Controller">
+<BorderPane maxHeight="-Infinity" maxWidth="600.0" minHeight="-Infinity" minWidth="400.0" prefHeight="400.0" prefWidth="1400.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="application.Controller">
    <bottom>
       <VBox prefHeight="111.0" prefWidth="600.0" BorderPane.alignment="CENTER">
          <children>
             <HBox prefHeight="68.0" prefWidth="600.0">
                <children>
-                  <Button mnemonicParsing="false" onAction="#openImage" prefHeight="40.0" prefWidth="100.0" text="Open">
+                  <Button alignment="CENTER" mnemonicParsing="false" onAction="#openImage" prefHeight="40.0" prefWidth="140.0" text="Open">
                      <HBox.margin>
-                        <Insets left="150.0" top="20.0" />
+                        <Insets left="90.0" top="20.0" />
                      </HBox.margin>
                   </Button>
-                  <Button mnemonicParsing="false" onAction="#playVideo" prefHeight="40.0" prefWidth="100.0" text="Play">
+                  <Button alignment="CENTER" contentDisplay="CENTER" mnemonicParsing="false" onAction="#playVideo" prefHeight="40.0" prefWidth="140.0" text="Analyze">
                      <HBox.margin>
-                        <Insets left="100.0" top="20.0" />
+                        <Insets left="140.0" top="20.0" />
                      </HBox.margin>
                   </Button>
                </children>
             </HBox>
-            <Text strokeType="OUTSIDE" strokeWidth="0.0" text="CMPT 365 | Simon Fraser University | May 2017&#10;Mark Drew (mark@cs.sfu.ca) | Chen Song (csa102@sfu.ca)" textAlignment="CENTER" wrappingWidth="456.638671875">
+            <Text strokeType="OUTSIDE" strokeWidth="0.0" text="CMPT 365 | Simon Fraser University | November 30, 2017 | Grant Wallis | Hugo Cheng" textAlignment="CENTER" wrappingWidth="456.638671875">
                <VBox.margin>
                   <Insets left="50.0" />
                </VBox.margin>
@@ -43,21 +43,38 @@
    <center>
       <VBox>
          <children>
-            <TextField alignment="TOP_CENTER" text="Column STI vs Row STI" />
-            <SplitPane dividerPositions="0.28256513026052105, 0.28857715430861725, 0.5881763527054108, 0.594188376753507" prefHeight="160.0" prefWidth="200.0">
+            <TextField alignment="CENTER" />
+            <SplitPane dividerPositions="0.28256514026052104, 0.28857715430861725, 0.5881763527054108, 0.594188376753507, 0.5, 0.5" prefHeight="160.0" prefWidth="300.0">
               <items>
-                  <ImageView fx:id="imageViewCol" fitHeight="263.0" fitWidth="183.0" pickOnBounds="true" preserveRatio="true" />
+                  <VBox maxHeight="300.0" maxWidth="140.0" minHeight="300.0" minWidth="140.0">
+                     <children>
+                        <TextField alignment="CENTER" text="Column STI" />
+                        <ImageView fx:id="imageViewCol" fitHeight="300.0" fitWidth="140.0" pickOnBounds="true" preserveRatio="true" />
+                     </children>
+                  </VBox>
                 <AnchorPane maxHeight="1.7976931348623157E308" maxWidth="0.0" minHeight="0.0" minWidth="0.0" prefHeight="263.0" prefWidth="10.0" />
-                  <ImageView fx:id="imageViewRow" fitHeight="263.0" fitWidth="175.0" pickOnBounds="true" preserveRatio="true" />
-                  <AnchorPane maxWidth="0.0" minWidth="0.0" prefHeight="200.0" prefWidth="200.0" />
-                  <ImageView fx:id="imageViewDiag" fitHeight="263.0" fitWidth="194.0" pickOnBounds="true" preserveRatio="true" />
+                  <VBox maxHeight="300.0" maxWidth="140.0" minHeight="300.0" minWidth="140.0">
+                     <children>
+                        <TextField alignment="CENTER" text="Row STI" />
+                        <ImageView fx:id="imageViewRow" fitHeight="300.0" fitWidth="140.0" pickOnBounds="true" preserveRatio="true" />
+                     </children>
+                  </VBox>
+                  <AnchorPane maxWidth="0.0" minWidth="0.0" prefHeight="300.0" prefWidth="300.0" />
+                  <VBox maxHeight="300.0" maxWidth="140.0" minHeight="300.0" minWidth="140.0">
+                     <children>
+                        <TextField alignment="CENTER" text="Diagonal STI" />
+                        <ImageView fx:id="imageViewDiag" fitHeight="300.0" fitWidth="140.0" pickOnBounds="true" preserveRatio="true" />
+                     </children>
+                  </VBox>
+                  <AnchorPane maxWidth="0.0" minWidth="0.0" prefHeight="300.0" prefWidth="300.0" />
+                  <VBox maxHeight="300.0" maxWidth="140.0" minHeight="300.0" minWidth="140.0">
+                     <children>
+                        <TextField alignment="CENTER" text="Rev Diagonal STI" />
+                        <ImageView fx:id="imageViewRevDiag" fitHeight="300.0" fitWidth="140.0" pickOnBounds="true" preserveRatio="true" />
+                     </children>
+                  </VBox>
               </items>
             </SplitPane>
-            <Slider fx:id="slider" blockIncrement="0.1" majorTickUnit="0.25" max="1.0">
-               <VBox.margin>
-                  <Insets left="90.0" right="90.0" />
-               </VBox.margin>
-            </Slider>
          </children>
       </VBox>
    </center>

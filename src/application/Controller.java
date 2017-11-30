@@ -1,7 +1,10 @@
 package application;
 
 import java.io.File;
-
+import java.io.FileNotFoundException;
+import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -45,6 +48,8 @@ public class Controller {
 	private ImageView imageViewCol;
 	@FXML
 	private ImageView imageViewDiag;
+	@FXML
+	private ImageView imageViewRevDiag;
 	@FXML
 	private Slider slider; 
 	@FXML
@@ -106,7 +111,6 @@ public class Controller {
                     	ArrayList<double[][]> diagHistogramTable = new ArrayList<double[][]>();
                     	ArrayList<double[][]> revDiagHistogramTable = new ArrayList<double[][]>();
 
-                    	//TODO histogram diagonal tables
                     	
                     	//transpose to match project description logic
                     	colSTI = colSTI.t();
@@ -116,10 +120,12 @@ public class Controller {
                     	
                     	Image imageRow = Utilities.mat2Image(rowSTI);
 						Image imageCol = Utilities.mat2Image(colSTI);
-						Image imageDia = Utilities.mat2Image(diagSTI);
+						Image imageDiag = Utilities.mat2Image(diagSTI);
+						Image imageRevDiag = Utilities.mat2Image(revDiagSTI);
 						imageViewCol.setImage(imageCol);
 						imageViewRow.setImage(imageRow);
-						imageViewDiag.setImage(imageDia);
+						imageViewDiag.setImage(imageDiag);
+						imageViewRevDiag.setImage(imageRevDiag);
                     	
                     	//build histograms               	
                     	for(int i = 0; i < colSTI.width(); i++) {
@@ -138,10 +144,17 @@ public class Controller {
                      		buildHistogram(revDiagSTI.col(i), revDiagHistogramTable);
                       	}
                     	
-                    	//printHistograms(rowHistogramTable);
-                    	//printHistograms(colHistogramTable);
-                    	//printHistograms(diagHistogramTable);
-                    	//printHistograms(revDiagHistogramTable);
+                    	try {
+							printHistograms(rowHistogramTable, "horizontal.csv");
+	                    	printHistograms(colHistogramTable, "vertical.csv");
+	                    	printHistograms(diagHistogramTable, "revDiagonal.csv");
+	                    	printHistograms(revDiagHistogramTable, "diagonal.csv");
+						} catch (FileNotFoundException e) {
+							e.printStackTrace();
+						} catch (UnsupportedEncodingException e) {
+							e.printStackTrace();
+						}
+
 
                     	
                     	//analyze
@@ -178,18 +191,21 @@ public class Controller {
 					
 				}
 
-				private void printHistograms(ArrayList<double[][]> table) {
-					System.out.println();
-                	System.out.println(table.size());
+				private void printHistograms(ArrayList<double[][]> table, String fileName) throws FileNotFoundException, UnsupportedEncodingException {
+					PrintWriter writer = new PrintWriter(fileName, "UTF-8");
+					writer.println();
                 	for(int i = 0; i < table.size(); i++) {
-                		System.out.println("Table" + i);
+                		writer.println("Table" + i);
                 		for(int j = 0; j < bins; j++) {
                 			for(int k = 0; k < bins; k++) {
-                				System.out.print(table.get(i)[j][k] + " ");
+                				DecimalFormat df = new DecimalFormat ("#.#####");
+                				String val = df.format(table.get(i)[j][k]);
+                				writer.print(val + ",");
                 			}
-                			System.out.println();
+                			writer.println();
                 		}
                 	}
+                	writer.close();
 				}
 				
 				private void buildHistogram(Mat column, ArrayList<double[][]> table) {
@@ -296,7 +312,7 @@ public class Controller {
 					 imageViewRow.setImage(Utilities.mat2Image(frame));
 					 imageViewCol.setImage(Utilities.mat2Image(frame));
 					 imageViewDiag.setImage(Utilities.mat2Image(frame));
-					
+					 imageViewRevDiag.setImage(Utilities.mat2Image(frame));
 				 }			
 			}
 	}
