@@ -40,7 +40,11 @@ class errorMessage {
 public class Controller {
 	
 	@FXML
-	private ImageView imageView; // the image display window in the GUI
+	private ImageView imageViewRow; // the image display window in the GUI
+	@FXML
+	private ImageView imageViewCol;
+	@FXML
+	private ImageView imageViewDiag;
 	@FXML
 	private Slider slider; 
 	@FXML
@@ -50,21 +54,22 @@ public class Controller {
 	double framesPlayed = 1;
 	private VideoCapture capture;
 	private ScheduledExecutorService timer; 
-
+	
 	
 	Mat colSTI = new Mat();
 	Mat rowSTI = new Mat();	
-	//Mat diagSTI = new Mat();
+	Mat diagSTI = new Mat();
+	Mat revDiagSTI = new Mat();
 	
 	private String getImageFilename() {
 		// This method should return the filename of the image to be played
 		// You should insert your code here to allow user to select the file
-		FileChooser fileDialog = new FileChooser();
-		fileDialog.setTitle("Select a Video File");
-		File selectedFile = fileDialog.showOpenDialog(null);
-		String fileName = selectedFile.getAbsolutePath();
+		//FileChooser fileDialog = new FileChooser();
+		//fileDialog.setTitle("Select a Video File");
+		//File selectedFile = fileDialog.showOpenDialog(null);
+		//String fileName = selectedFile.getAbsolutePath();
 		
-		return fileName;
+		return "resources/Islands.3gp";
 	}
 	
 	
@@ -75,7 +80,7 @@ public class Controller {
 		 
 		 colSTI = new Mat(new Size(frameHeight,0),16);
 		 rowSTI = new Mat(new Size(frameWidth,0),16);
-		 //diagSTI = new Mat(new Size(min(frameWidth, frameHeight), 0),16);
+		 diagSTI = new Mat(new Size(min(frameWidth, frameHeight), 0),16);
 		 
 		 int bins = (int) (1 + Math.log(frameHeight)/Math.log(2));;
 		 if (capture != null && capture.isOpened()) { 
@@ -90,8 +95,12 @@ public class Controller {
 						 // decode successfully
 						int frameIndex = (int)framesPlayed;
 						buildSTI(frame,frameIndex);
-						Image image = Utilities.mat2Image(colSTI);
-						imageView.setImage(image);
+						Image imageRow = Utilities.mat2Image(rowSTI);
+						Image imageCol = Utilities.mat2Image(colSTI);
+						Image imageDia = Utilities.mat2Image(diagSTI);
+						imageViewCol.setImage(imageCol);
+						imageViewRow.setImage(imageRow);
+						imageViewDiag.setImage(imageDia);
 						framesPlayed++;
 						
                     } else { 
@@ -99,12 +108,16 @@ public class Controller {
                     	
                     	ArrayList<double[][]> colHistogramTable = new ArrayList<double[][]>();
                     	ArrayList<double[][]> rowHistogramTable = new ArrayList<double[][]>();
-                    	//ArrayList<double[][]> diagHistogramTable = new ArrayList<double[][]>();
+                    	ArrayList<double[][]> diagHistogramTable = new ArrayList<double[][]>();
+                    	ArrayList<double[][]> revDiagHistogramTable = new ArrayList<double[][]>();
+
                     	//TODO histogram diagonal tables
                     	
                     	//transpose to match project description logic
                     	colSTI = colSTI.t();
                     	rowSTI = rowSTI.t();
+                    	diagSTI = diagSTI.t();
+                    	revDiagSTI = revDiagSTI.t();
                     	
                     	//build histograms               	
                     	for(int i = 0; i < colSTI.width(); i++) {
@@ -115,19 +128,28 @@ public class Controller {
                     		buildHistogram(rowSTI.col(i), rowHistogramTable);
                     	}
                     	
-//                    	for(int i = 0; i < diagSTI.width(); i++) {
-//                    		buildHistogram(diagSTI.col(i), diagHistogramTable);
-//                    	}
+                    	for(int i = 0; i < diagSTI.width(); i++) {
+                     		buildHistogram(diagSTI.col(i), diagHistogramTable);
+                      	}
+                    	
+                    	for(int i = 0; i < revDiagSTI.width(); i++) {
+                     		buildHistogram(revDiagSTI.col(i), revDiagHistogramTable);
+                      	}
                     	
                     	//printHistograms(rowHistogramTable);
                     	//printHistograms(colHistogramTable);
                     	//printHistograms(diagHistogramTable);
+                    	//printHistograms(revDiagHistogramTable);
+
                     	
                     	//analyze
                     	detectWipe(colHistogramTable, "Horizontal");
                     	detectWipe(rowHistogramTable, "Vertical");
                     	
-                        return;
+                    	// Since the STIs are transposed, Diagonals are actually reverse diagonals
+                    	detectWipe(revDiagHistogramTable, "Diagonal");
+                    	detectWipe(diagHistogramTable, "Reverse Diagonal");
+                    	
 					 }
 					 
 				 }
@@ -142,7 +164,7 @@ public class Controller {
 							}
 						}
 						// Threshold value
-						if(intersection < 0.3)  {
+						if(intersection < 0.5)  {
 							detected = true;
 							System.out.println(wipeDirection + " wipe detected between frames " + (i - 1) + " and " + i);
 						}
@@ -200,7 +222,7 @@ public class Controller {
 			 }  
 			    // run the frame grabber     
 			  timer = Executors.newSingleThreadScheduledExecutor();  
-			  timer.scheduleAtFixedRate(frameGrabber, 0, Math.round(10/framePerSecond), TimeUnit.MILLISECONDS);
+			  timer.scheduleAtFixedRate(frameGrabber, 0,  1, TimeUnit.MILLISECONDS);
 			    
 		 }
 	}
@@ -216,12 +238,21 @@ public class Controller {
 		int middleColIndex = Math.floorDiv(frame.width(), 2);
 		Mat middle_col = frame.col(middleColIndex);
 		Mat middle_row = frame.row(middleRolIndex);
-		//Mat diag = frame.diag(0);
-		
+		Mat diag = frame.diag(0);
+		Mat revDiag = new Mat(1,frame.height(), 16);
+		int p = 0;
+		int q = frame.width() - 1;
+		while(p != frame.height() && q >= 0) {
+			revDiag.put(0,p,frame.get(p, q));
+			p++;
+			q--;
+		}
+			
 		
 		colSTI.push_back(middle_col.t());
 		rowSTI.push_back(middle_row);
-		//diagSTI.push_back(diag);
+		diagSTI.push_back(diag.t());
+		revDiagSTI.push_back(revDiag);
 	}
 	
 	
@@ -260,9 +291,11 @@ public class Controller {
 				
 				 Mat frame = new Mat();
 				 if(capture.read(frame)) {
-					 imageView.setImage(Utilities.mat2Image(frame));
-				 }
-				// we don't want to play the video as soon as it opens, for now we just grab the first frame of the video 			
+					 imageViewRow.setImage(Utilities.mat2Image(frame));
+					 imageViewCol.setImage(Utilities.mat2Image(frame));
+					 imageViewDiag.setImage(Utilities.mat2Image(frame));
+					
+				 }			
 			}
 	}
 	

@@ -14,7 +14,7 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Text?>
 
-<BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="application.Controller">
+<BorderPane maxHeight="-Infinity" maxWidth="600.0" minHeight="-Infinity" minWidth="400.0" prefHeight="400.0" prefWidth="1000.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="application.Controller">
    <bottom>
       <VBox prefHeight="111.0" prefWidth="600.0" BorderPane.alignment="CENTER">
          <children>
@@ -43,11 +43,16 @@
    <center>
       <VBox>
          <children>
-            <ImageView fx:id="imageView" fitHeight="263.0" fitWidth="421.0" pickOnBounds="true" preserveRatio="true" BorderPane.alignment="CENTER">
-               <VBox.margin>
-                  <Insets left="90.0" top="10.0" />
-               </VBox.margin>
-            </ImageView>
+            <TextField alignment="TOP_CENTER" text="Column STI vs Row STI" />
+            <SplitPane dividerPositions="0.28256513026052105, 0.28857715430861725, 0.5881763527054108, 0.594188376753507" prefHeight="160.0" prefWidth="200.0">
+              <items>
+                  <ImageView fx:id="imageViewCol" fitHeight="263.0" fitWidth="183.0" pickOnBounds="true" preserveRatio="true" />
+                <AnchorPane maxHeight="1.7976931348623157E308" maxWidth="0.0" minHeight="0.0" minWidth="0.0" prefHeight="263.0" prefWidth="10.0" />
+                  <ImageView fx:id="imageViewRow" fitHeight="263.0" fitWidth="175.0" pickOnBounds="true" preserveRatio="true" />
+                  <AnchorPane maxWidth="0.0" minWidth="0.0" prefHeight="200.0" prefWidth="200.0" />
+                  <ImageView fx:id="imageViewDiag" fitHeight="263.0" fitWidth="194.0" pickOnBounds="true" preserveRatio="true" />
+              </items>
+            </SplitPane>
             <Slider fx:id="slider" blockIncrement="0.1" majorTickUnit="0.25" max="1.0">
                <VBox.margin>
                   <Insets left="90.0" right="90.0" />
