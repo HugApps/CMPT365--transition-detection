@@ -64,12 +64,12 @@ public class Controller {
 	private String getImageFilename() {
 		// This method should return the filename of the image to be played
 		// You should insert your code here to allow user to select the file
-		//FileChooser fileDialog = new FileChooser();
-		//fileDialog.setTitle("Select a Video File");
-		//File selectedFile = fileDialog.showOpenDialog(null);
-		//String fileName = selectedFile.getAbsolutePath();
+		FileChooser fileDialog = new FileChooser();
+		fileDialog.setTitle("Select a Video File");
+		File selectedFile = fileDialog.showOpenDialog(null);
+		String fileName = selectedFile.getAbsolutePath();
 		
-		return "resources/Islands.3gp";
+		return fileName;
 	}
 	
 	
@@ -95,12 +95,7 @@ public class Controller {
 						 // decode successfully
 						int frameIndex = (int)framesPlayed;
 						buildSTI(frame,frameIndex);
-						Image imageRow = Utilities.mat2Image(rowSTI);
-						Image imageCol = Utilities.mat2Image(colSTI);
-						Image imageDia = Utilities.mat2Image(diagSTI);
-						imageViewCol.setImage(imageCol);
-						imageViewRow.setImage(imageRow);
-						imageViewDiag.setImage(imageDia);
+						
 						framesPlayed++;
 						
                     } else { 
@@ -118,6 +113,13 @@ public class Controller {
                     	rowSTI = rowSTI.t();
                     	diagSTI = diagSTI.t();
                     	revDiagSTI = revDiagSTI.t();
+                    	
+                    	Image imageRow = Utilities.mat2Image(rowSTI);
+						Image imageCol = Utilities.mat2Image(colSTI);
+						Image imageDia = Utilities.mat2Image(diagSTI);
+						imageViewCol.setImage(imageCol);
+						imageViewRow.setImage(imageRow);
+						imageViewDiag.setImage(imageDia);
                     	
                     	//build histograms               	
                     	for(int i = 0; i < colSTI.width(); i++) {
