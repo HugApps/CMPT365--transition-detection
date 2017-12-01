@@ -49,28 +49,28 @@
                   <VBox maxHeight="300.0" maxWidth="140.0" minHeight="300.0" minWidth="140.0">
                      <children>
                         <TextField alignment="CENTER" text="Column STI" />
-                        <ImageView fx:id="imageViewCol" fitHeight="300.0" fitWidth="140.0" pickOnBounds="true" preserveRatio="true" />
+                        <ImageView fx:id="imageViewCol" fitHeight="300.0" fitWidth="140.0" pickOnBounds="true" />
                      </children>
                   </VBox>
                 <AnchorPane maxHeight="1.7976931348623157E308" maxWidth="0.0" minHeight="0.0" minWidth="0.0" prefHeight="263.0" prefWidth="10.0" />
                   <VBox maxHeight="300.0" maxWidth="140.0" minHeight="300.0" minWidth="140.0">
                      <children>
                         <TextField alignment="CENTER" text="Row STI" />
-                        <ImageView fx:id="imageViewRow" fitHeight="300.0" fitWidth="140.0" pickOnBounds="true" preserveRatio="true" />
+                        <ImageView fx:id="imageViewRow" fitHeight="300.0" fitWidth="140.0" pickOnBounds="true" />
                      </children>
                   </VBox>
                   <AnchorPane maxWidth="0.0" minWidth="0.0" prefHeight="300.0" prefWidth="300.0" />
                   <VBox maxHeight="300.0" maxWidth="140.0" minHeight="300.0" minWidth="140.0">
                      <children>
                         <TextField alignment="CENTER" text="Diagonal STI" />
-                        <ImageView fx:id="imageViewDiag" fitHeight="300.0" fitWidth="140.0" pickOnBounds="true" preserveRatio="true" />
+                        <ImageView fx:id="imageViewDiag" fitHeight="300.0" fitWidth="140.0" pickOnBounds="true" />
                      </children>
                   </VBox>
                   <AnchorPane maxWidth="0.0" minWidth="0.0" prefHeight="300.0" prefWidth="300.0" />
                   <VBox maxHeight="300.0" maxWidth="140.0" minHeight="300.0" minWidth="140.0">
                      <children>
                         <TextField alignment="CENTER" text="Rev Diagonal STI" />
-                        <ImageView fx:id="imageViewRevDiag" fitHeight="300.0" fitWidth="140.0" pickOnBounds="true" preserveRatio="true" />
+                        <ImageView fx:id="imageViewRevDiag" fitHeight="300.0" fitWidth="140.0" pickOnBounds="true" />
                      </children>
                   </VBox>
               </items>

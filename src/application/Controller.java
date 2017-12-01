@@ -124,8 +124,8 @@ public class Controller {
 						Image imageRevDiag = Utilities.mat2Image(revDiagSTI);
 						imageViewCol.setImage(imageCol);
 						imageViewRow.setImage(imageRow);
-						imageViewDiag.setImage(imageDiag);
-						imageViewRevDiag.setImage(imageRevDiag);
+						imageViewDiag.setImage(imageRevDiag);
+						imageViewRevDiag.setImage(imageDiag);
                     	
                     	//build histograms               	
                     	for(int i = 0; i < colSTI.width(); i++) {
@@ -179,7 +179,8 @@ public class Controller {
 							}
 						}
 						// Threshold value
-						if(intersection < 0.5)  {
+						if(intersection < 0.7)  {
+							
 							detected = true;
 							System.out.println(wipeDirection + " wipe detected between frames " + (i - 1) + " and " + i);
 						}
